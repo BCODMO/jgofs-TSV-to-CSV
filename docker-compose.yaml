@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  pipeline:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    container_name: tsv_to_csv
+    volumes:
+      - ./code:/code
+      - ${DATA_DIR}:/data
+      - ${OUTPUT_DIR}:/output
