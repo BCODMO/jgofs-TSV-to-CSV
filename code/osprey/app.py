@@ -75,7 +75,19 @@ def lookupDatadocs(path, dataset_id, version_id):
 
 with open("{dir}/import_jgofs_06-30-2023.csv".format(dir=OUTPUT_DIR), 'w') as drupal_output:
     drupalwriter = csv.writer(drupal_output)
-    fieldnames = ['dataset_id', 'dataset_version', 'tsv_path', 'filename', 'bytesize', 'md5', 'mimetype', 'aws_job_id', 'aws_source_bucket', 'aws_source_path', 'datadocs_url']
+    fieldnames = [
+        'dataset_id', 
+        'dataset_version', 
+        'tsv_path', 
+        'filename', 
+        'bytesize',
+        'md5', 
+        'mimetype', 
+        'aws_job_id', 
+        'aws_source_bucket', 
+        'aws_source_path', 
+        'datadocs_url'
+    ]
     drupalwriter.writerow(fieldnames)
 
     # read the AWS check-in file
@@ -97,7 +109,7 @@ with open("{dir}/import_jgofs_06-30-2023.csv".format(dir=OUTPUT_DIR), 'w') as dr
                         dataset_id = tsv_data['dataset_id']
                         version = tsv_data['version']
                         logging.info("Dataset: {id}_v{v}".format(id=dataset_id, v=version))
-                        drupalwriter.writerow([dataset_id, version, data['path'], data['filename'], data['bytesize'], data['md5'], data['filename'], data['mimetype'], data['aws_job_id'], data['aws_source_bucket'], data['aws_source_path'], data['url']])
+                        drupalwriter.writerow([dataset_id, version, data['path'], data['filename'], data['bytesize'], data['md5'], data['mimetype'], data['aws_job_id'], data['aws_source_bucket'], data['aws_source_path'], data['url']])
 
                         continue
                         if 'downloads' in tsv_data and 'tsv' in tsv_data['downloads']:
