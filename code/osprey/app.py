@@ -67,11 +67,11 @@ def lookupDatadocs(path, dataset_id, version_id):
     return None
 
 
-json_files = Path(DATA_DIR).glob("**/dataURL/*.json")
-file_list = list(json_files)
-print(file_list)
+#json_files = Path(DATA_DIR).glob("**/dataURL/*.json")
+#file_list = list(json_files)
+#print(file_list)
 
-logging.info("num files is {num_files}".format(num_files=len(file_list)))
+#logging.info("num files is {num_files}".format(num_files=len(file_list)))
 
 with open("{dir}/import_jgofs_06-30-2023.csv".format(dir=OUTPUT_DIR), 'w') as drupal_output:
     drupalwriter = csv.writer(drupal_output)
@@ -98,6 +98,7 @@ with open("{dir}/import_jgofs_06-30-2023.csv".format(dir=OUTPUT_DIR), 'w') as dr
                         version = tsv_data['version']
                         logging.info("Dataset: {id}_v{v}".format(id=dataset_id, v=version))
                         drupalwriter.writerow([dataset_id, version, data['path'], data['filename'], data['bytesize'], data['md5'], data['filename'], data['mimetype'], data['aws_job_id'], data['aws_source_bucket'], data['aws_source_path'], data['url']])
+
                         continue
                         if 'downloads' in tsv_data and 'tsv' in tsv_data['downloads']:
                             status_code = tsv_data['downloads']['tsv']['status_code']
@@ -108,6 +109,7 @@ with open("{dir}/import_jgofs_06-30-2023.csv".format(dir=OUTPUT_DIR), 'w') as dr
                             else:
                                 logging.info("FAILURE [{code}] {f}".format(code=status_code, f=os.path.basename(path)))
                 else:
+                    logging.warning("Could not find JSON: {f}".format(f=json_path));
                     continue
 
 logging.info('Done!')
