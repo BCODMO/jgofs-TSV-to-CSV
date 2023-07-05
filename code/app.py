@@ -19,24 +19,22 @@ logging.basicConfig(
 )
 
 def makeCSV(source, destination):
-    logging.info("{src} => {dest}".format(src=file, dest=destination));
+    logging.info("Attempting {src} => {dest}".format(src=file, dest=destination));
 
-    resource = TableResource(path=source, format='tsv', encoding='utf-8')
-    #pprint(resource.read_rows())
+    try:
+        resource = TableResource(path=source, format='tsv', encoding='utf-8')
+        #pprint(resource.read_rows())
 
-    resource.infer(stats=True)
-    for i,field in enumerate(resource.schema.fields):
-        resource.schema.set_field_type(field.name, 'string')
-    #logging.info(resource.schema)
+        resource.infer(stats=True)
+        for i,field in enumerate(resource.schema.fields):
+            resource.schema.set_field_type(field.name, 'string')
+        #logging.info(resource.schema)
 
-    target = TableResource(path=destination, control=formats.CsvControl(line_terminator="\n"))
-    resource.write(target)
-
-    #pipeline = Pipeline(steps=[steps.table_write(path=destination)])
-    #logging.info(pipeline)
-
-    #target = resource.transform(pipeline)
-    #logging.info(target.read_rows())
+        target = TableResource(path=destination, control=formats.CsvControl(line_terminator="\n"))
+        resource.write(target)
+    except Exception as e:
+        logging.info("Failed {src} => {dest}".format(src=file, dest=destination));
+        logging.exception(e)
 
 
 files = Path(DATA_DIR).glob("**/dataURL/*.tsv")
