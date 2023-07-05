@@ -18,4 +18,4 @@ services:
     volumes:
       - ./code/osprey:/code
       - ${DATA_DIR}:/data
-      - ${OUTPUT_DIR}:/output
+      - ${DRUPAL_OUTPUT_DIR}:/output
