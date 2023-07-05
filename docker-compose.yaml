@@ -5,9 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    restart: unless-stopped
     container_name: tsv_to_csv
     volumes:
       - ./code:/code
+      - ${DATA_DIR}:/data
+      - ${OUTPUT_DIR}:/output
+  report:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: report_csv_to_osprey
+    volumes:
+      - ./code/osprey:/code
       - ${DATA_DIR}:/data
       - ${OUTPUT_DIR}:/output

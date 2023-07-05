@@ -22,19 +22,28 @@ def makeCSV(source, destination):
     logging.info("Attempting {src} => {dest}".format(src=file, dest=destination));
 
     try:
+        # Read in the TSV file using UTF-8 encoding
         resource = TableResource(path=source, format='tsv', encoding='utf-8')
-        #pprint(resource.read_rows())
+        #logging.debug(resource.read_rows())
 
+        #Infer the schema so the code knows what the fields are
         resource.infer(stats=True)
+        # Force all columns to be interpreted as string
         for i,field in enumerate(resource.schema.fields):
             resource.schema.set_field_type(field.name, 'string')
-        #logging.info(resource.schema)
+        #logging.debug(resource.schema)
 
+        # Write the file as CSV with LF line endings
         target = TableResource(path=destination, control=formats.CsvControl(line_terminator="\n"))
         resource.write(target)
     except Exception as e:
-        logging.info("Failed {src} => {dest}".format(src=file, dest=destination));
         logging.exception(e)
+
+    #pipeline = Pipeline(steps=[steps.table_write(path=destination)])
+    #logging.info(pipeline)
+
+    #target = resource.transform(pipeline)
+    #logging.info(target.read_rows())
 
 
 files = Path(DATA_DIR).glob("**/dataURL/*.tsv")
