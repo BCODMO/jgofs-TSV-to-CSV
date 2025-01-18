@@ -1,0 +1,7 @@
+SELECT DISTINCT ?dd_id (STR(?deployment_name) as ?deployment)
+WHERE {
+  ?dd a odo:DeploymentDataset .
+  ?dd dcterms:identifier ?dd_id .
+  ?dd odo:fromDeployment/dcterms:title ?deployment_name .
+}
+ORDER BY ?dd_id

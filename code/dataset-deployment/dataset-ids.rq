@@ -1,0 +1,13 @@
+SELECT DISTINCT ?dataset_id ?dd_id (STR(?deployment_name) as ?deployment)
+WHERE {
+  ?a a odo:DataDownloadAffordance .
+  ?a schema:subjectOf ?dd .
+  ?dd a odo:DeploymentDataset .
+  ?dd odo:fromCollection ?dataset .
+  ?dataset a odo:Dataset .
+  FILTER NOT EXISTS { ?dataset odo:dataFile ?file }
+  ?dataset dcterms:identifier ?dataset_id .
+  ?dd dcterms:identifier ?dd_id .
+  ?dd odo:fromDeployment/dcterms:title ?deployment_name .
+}
+ORDER BY ?dataset ?dd_id
