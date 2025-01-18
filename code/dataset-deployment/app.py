@@ -41,7 +41,8 @@ def readManifest(row):
 
 
 def makeCSV(source, destination):
-    logging.info("Attempting {src} => {dest}".format(src=file, dest=destination));
+    logging.info("Attempting {src} => {dest}".format(src=source, dest=destination));
+    return
 
     try:
         # Read in the TSV file using UTF-8 encoding
@@ -72,6 +73,8 @@ with open(DATASET_IDS) as datasetfile:
             skipped_headers = True
             continue
         else:
+            if row[0] not in DATASETS:
+                DATASETS[row[0]] = {}
             DATASETS[row[0]][row[1]] = {'name': row[2]}
 
 
@@ -99,7 +102,7 @@ with open(CSV_INFO) as csvfile:
 
             # convert to CSV
             filepath = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.tsv".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
-            destination = "{dir}{dest}".format(dir=OUTPUT_DIR, dest=filename)
+            destination = "{dir}/{dataset}/{dest}".format(dir=OUTPUT_DIR, dataset=data['dataset_id'], dest=filename)
             makeCSV(source=filepath, destination=destination)
 
             """

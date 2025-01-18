@@ -1,15 +1,17 @@
 version: '3'
 
 services:
+
   pipeline:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: tsv_to_csv
     volumes:
-      - ./code:/code
+      - ./code/dataset-deployment:/code
       - ${DATA_DIR}:/data
       - ${OUTPUT_DIR}:/output
+
   report:
     build:
       context: .
