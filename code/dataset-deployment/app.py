@@ -11,6 +11,7 @@ from frictionless import Pipeline, Resource, formats, steps, transform
 from frictionless.resources import TableResource
 
 DATASET_IDS = 'dataset-ids.csv'
+DEPLOYMENTS_IDS = 'dataset-deployments.csv'
 CSV_INFO = 'QA_dd_transition-as_data_file.csv'
 
 DATA_DIR = '/data/'
@@ -77,6 +78,19 @@ with open(DATASET_IDS) as datasetfile:
                 DATASETS[row[0]] = {}
             DATASETS[row[0]][row[1]] = {'name': row[2]}
 
+#read the dataset-ids file
+DEPLOYMENTS = {}
+with open(DEPLOYMENTS_IDS) as ddfile:
+    spreadsheet = csv.reader(ddile)
+    skipped_headers = False
+    for row in spreadsheet:
+        if False == skipped_headers:
+            skipped_headers = True
+            continue
+        elif row[0] not in DEPLOYMENTS:
+                DEPLOYMENTS[row[0]] = {'name': row[1]}
+
+NOT_FOUND = []]
 
 # read the dataset deployment file
 with open(CSV_INFO) as csvfile:
@@ -89,16 +103,30 @@ with open(CSV_INFO) as csvfile:
             continue
         else:
 
+            deployment_name = None
             if data['dataset_id'] not in DATASETS:
-                logging.warning('Dataset not found: ' + data['dataset_id'])
-                continue
+                
+                if data['dataset_id'] not in  NOT_FOUND['dataset']:
+                    NOT_FOUND.append('DATASET not found: ' + data['dataset_id'])
+
+                if data['dd_id'] not in DEPLOYMENTS:
+                    logging.warning('Dataset Deployment not found: ' + data['dd_id'])
+                    if data['dd_id'] not in  NOT_FOUND['dataset-deployment']:
+                        NOT_FOUND.append('DEPLOYMENT not found: ' + data['dd_id'])
+                    continue
+                else:
+                    deployment_name = DEPLOYMENTS[data['dd_id']['name']]
+            else:
+                deployment_name = DATASETS[data['dataset_id']][data['dd_id']]['name']
+
             if data['dd_id'] not in DATASETS[data['dataset_id']]:
                 logging.warning('Dataset Deployment not found: ' + data['dd_id'] + ' in Dataset: ' + data['dataset_id'])
+                if data['dd_id'] not in  NOT_FOUND['dataset-deployment']:
+                        NOT_FOUND.append('DATASET-DEPLOYMENT not found: ' + data['dd_id'])
                 continue
-            
 
             # get the filename
-            filename = "{object}_{deployment}.csv".format(object=data['object_name'], deployment=DATASETS[data['dataset_id']][data['dd_id']]['name'])
+            filename = "{object}_{deployment}.csv".format(object=data['object_name'], deployment=deployment_name)
 
             # convert to CSV
             filepath = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.tsv".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
@@ -130,4 +158,7 @@ with open(CSV_INFO) as csvfile:
                 logging.warning("Could not find JSON: {f}".format(f=json_path));
                 continue
             """
+
+for d in NOT_FOUND:
+    logging.warning(d)
 logging.info('Done!')
