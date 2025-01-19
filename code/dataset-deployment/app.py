@@ -63,7 +63,7 @@ def makeCSV(source, destination):
         resource.write(target)
     except Exception as e:
         logging.exception(e)
-        throw e
+        raise e
 
 
 #read the dataset-ids file
