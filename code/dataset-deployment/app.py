@@ -14,6 +14,8 @@ DATASET_IDS = 'dataset-ids.csv'
 DEPLOYMENTS_IDS = 'dataset-deployments.csv'
 CSV_INFO = 'QA_dd_transition-as_data_file.csv'
 
+OUTPUT_FILE = 'dataset-deployment-manifest.csv'
+
 DATA_DIR = '/data/'
 OUTPUT_DIR = '/output'
 
@@ -43,7 +45,6 @@ def readManifest(row):
 
 def makeCSV(source, destination):
     logging.info("Attempting {src} => {dest}".format(src=source, dest=destination));
-    return 
 
     try:
         # Read in the TSV file using UTF-8 encoding
@@ -62,6 +63,7 @@ def makeCSV(source, destination):
         resource.write(target)
     except Exception as e:
         logging.exception(e)
+        throw e
 
 
 #read the dataset-ids file
@@ -97,36 +99,28 @@ NOT_FOUND = {
   'deployment': [],
 }
 
-# read the dataset deployment file
-with open(CSV_INFO) as csvfile:
-    spreadsheet = csv.reader(csvfile)
-    skipped_headers = False
-    for row in spreadsheet:
-        data = readManifest(row)
-        if False == skipped_headers:
-            skipped_headers = True
-            continue
-        else:
+final_output_file = "{dir}/{file}".format(dir=OUTPUT_DIR, file=OUTPUT_FILE)
+with open(final_output_file, 'w', newline='') as writefile:
+    fieldnames = ['dataset_id', 'dd_id', 'object_name', 'tsv_ok_dd', 'jgofs_ok_dd', 'doc_ok_dd', 'comment_ok_dd', 'make_primary', 'output_file']
+    writer = csv.DictWriter(writefile, fieldnames=fieldnames)
 
-            deployment_name = None
-            if data['dataset_id'] not in DATASETS:
-                if data['dataset_id'] not in NOT_FOUND['dataset']:
-                    NOT_FOUND['dataset'].append(data['dataset_id'])
-                    NOT_FOUND['msg'].append('DATASET not found: ' + data['dataset_id'])
-
-                if data['dd_id'] not in DEPLOYMENTS:
-                    if data['dd_id'] not in NOT_FOUND['deployment']:
-                        NOT_FOUND['deployment'].append(data['dd_id'])
-                        NOT_FOUND['msg'].append('DEPLOYMENT not found: ' + data['dd_id'])
-                    continue
-                else:
-                    deployment_name = DEPLOYMENTS[data['dd_id']]['name']
+    # read the dataset deployment file
+    with open(CSV_INFO) as csvfile:
+        spreadsheet = csv.reader(csvfile)
+        skipped_headers = False
+        for row in spreadsheet:
+            data = readManifest(row)
+            if False == skipped_headers:
+                skipped_headers = True
+                continue
             else:
-                if data['dd_id'] not in DATASETS[data['dataset_id']]:
-                    if data['dd_id'] not in NOT_FOUND['dataset-deployment']:
-                        NOT_FOUND['dataset-deployment'].append(data['dd_id'])
-                        NOT_FOUND['msg'].append('DATASET-DEPLOYMENT not found: ' + data['dd_id'] + ' in Dataset: ' + data['dataset_id'])
-                    
+
+                deployment_name = None
+                if data['dataset_id'] not in DATASETS:
+                    if data['dataset_id'] not in NOT_FOUND['dataset']:
+                        NOT_FOUND['dataset'].append(data['dataset_id'])
+                        NOT_FOUND['msg'].append('DATASET not found: ' + data['dataset_id'])
+
                     if data['dd_id'] not in DEPLOYMENTS:
                         if data['dd_id'] not in NOT_FOUND['deployment']:
                             NOT_FOUND['deployment'].append(data['dd_id'])
@@ -134,45 +128,61 @@ with open(CSV_INFO) as csvfile:
                         continue
                     else:
                         deployment_name = DEPLOYMENTS[data['dd_id']]['name']
-
                 else:
-                    deployment_name = DATASETS[data['dataset_id']][data['dd_id']]['name']
-
-
-            # get the filename
-            filename = "{object}_{deployment}.csv".format(object=data['object_name'], deployment=deployment_name)
-
-            # convert to CSV
-            logging.info("OBJECT: {o}".format(o=data['object_name']))
-            filepath = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.tsv".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
-            destination = "{dir}/{dataset}/{dest}".format(dir=OUTPUT_DIR, dataset=data['dataset_id'], dest=filename)
-            makeCSV(source=filepath, destination=destination)
-
-            """
-            # path: _jgofs/output/20230414143635/datasets/data/2291/dataURL/adcp.csv
-            json_path = data['path'].replace('_jgofs/output/20230414143635/datasets', '').replace('.csv', '.json')
-            if os.path.exists(json_path):
-                with open(json_path) as f:
-                    # read information about the TSV that was extracted
-                    tsv_data = json.load(f)
-                    dataset_id = tsv_data['dataset_id']
-                    version = tsv_data['version']
-                    logging.info("Dataset: {id}_v{v}".format(id=dataset_id, v=version))
-                    drupalwriter.writerow([dataset_id, version, data['path'], data['filename'], data['bytesize'], data['md5'], data['mimetype'], data['aws_job_id'], data['aws_source_bucket'], data['aws_source_path'], data['url']])
-
-                    continue
-                    if 'downloads' in tsv_data and 'tsv' in tsv_data['downloads']:
-                        status_code = tsv_data['downloads']['tsv']['status_code']
-                        path = tsv_data['downloads']['tsv']['path']
-                        if 200 == status_code:
-                            logging.info("SUCCESS [{code}] {f}".format(code=status_code, f=os.path.basename(path)))
-                            lookupDatadocs(path=path, dataset_id=dataset_id, version_id=version)
+                    if data['dd_id'] not in DATASETS[data['dataset_id']]:
+                        if data['dd_id'] not in NOT_FOUND['dataset-deployment']:
+                            NOT_FOUND['dataset-deployment'].append(data['dd_id'])
+                            NOT_FOUND['msg'].append('DATASET-DEPLOYMENT not found: ' + data['dd_id'] + ' in Dataset: ' + data['dataset_id'])
+                        
+                        if data['dd_id'] not in DEPLOYMENTS:
+                            if data['dd_id'] not in NOT_FOUND['deployment']:
+                                NOT_FOUND['deployment'].append(data['dd_id'])
+                                NOT_FOUND['msg'].append('DEPLOYMENT not found: ' + data['dd_id'])
+                            continue
                         else:
-                            logging.info("FAILURE [{code}] {f}".format(code=status_code, f=os.path.basename(path)))
-            else:
-                logging.warning("Could not find JSON: {f}".format(f=json_path));
-                continue
-            """
+                            deployment_name = DEPLOYMENTS[data['dd_id']]['name']
+
+                    else:
+                        deployment_name = DATASETS[data['dataset_id']][data['dd_id']]['name']
+
+
+                # get the filename
+                filename = "{object}_{deployment}.csv".format(object=data['object_name'], deployment=deployment_name)
+
+                # convert to CSV
+                logging.info("OBJECT: {o}".format(o=data['object_name']))
+                filepath = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.tsv".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
+                destination = "{dir}/{dataset}/{dest}".format(dir=OUTPUT_DIR, dataset=data['dataset_id'], dest=filename)
+                makeCSV(source=filepath, destination=destination)
+                data['output_file'] = destination
+                writer.writerow(data)
+                
+
+                """
+                # path: _jgofs/output/20230414143635/datasets/data/2291/dataURL/adcp.csv
+                json_path = data['path'].replace('_jgofs/output/20230414143635/datasets', '').replace('.csv', '.json')
+                if os.path.exists(json_path):
+                    with open(json_path) as f:
+                        # read information about the TSV that was extracted
+                        tsv_data = json.load(f)
+                        dataset_id = tsv_data['dataset_id']
+                        version = tsv_data['version']
+                        logging.info("Dataset: {id}_v{v}".format(id=dataset_id, v=version))
+                        drupalwriter.writerow([dataset_id, version, data['path'], data['filename'], data['bytesize'], data['md5'], data['mimetype'], data['aws_job_id'], data['aws_source_bucket'], data['aws_source_path'], data['url']])
+
+                        continue
+                        if 'downloads' in tsv_data and 'tsv' in tsv_data['downloads']:
+                            status_code = tsv_data['downloads']['tsv']['status_code']
+                            path = tsv_data['downloads']['tsv']['path']
+                            if 200 == status_code:
+                                logging.info("SUCCESS [{code}] {f}".format(code=status_code, f=os.path.basename(path)))
+                                lookupDatadocs(path=path, dataset_id=dataset_id, version_id=version)
+                            else:
+                                logging.info("FAILURE [{code}] {f}".format(code=status_code, f=os.path.basename(path)))
+                else:
+                    logging.warning("Could not find JSON: {f}".format(f=json_path));
+                    continue
+                """
 
 for d in NOT_FOUND:
     for item in NOT_FOUND[d]:
