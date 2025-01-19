@@ -152,7 +152,7 @@ with open(final_output_file, 'w', newline='') as writefile:
                 # convert to CSV
                 logging.info("OBJECT: {o}".format(o=data['object_name']))
                 filepath = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.tsv".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
-                destination = "{dir}/{dataset}/{dest}".format(dir=OUTPUT_DIR, dataset=data['dataset_id'], dest=filename)
+                destination = "{dir}/{dataset}/dataset_deployment/{dd_id}/{dest}".format(dir=OUTPUT_DIR, dataset=data['dataset_id'], dd_id=data['dd_id'], dest=filename)
                 makeCSV(source=filepath, destination=destination)
                 data['output_file'] = destination
                 writer.writerow(data)
