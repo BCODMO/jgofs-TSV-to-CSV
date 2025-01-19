@@ -32,7 +32,7 @@ def readManifest(row):
     return {
         'dataset_id': row[0],
         'dd_id': row[1],
-        'object_name': row[8],
+        'object_name': row[9],
         'tsv_ok_dd': row[14],
         'jgofs_ok_dd': row[15],
         'doc_ok_dd': row[16],
@@ -43,7 +43,7 @@ def readManifest(row):
 
 def makeCSV(source, destination):
     logging.info("Attempting {src} => {dest}".format(src=source, dest=destination));
-    return
+    return 
 
     try:
         # Read in the TSV file using UTF-8 encoding
@@ -81,7 +81,7 @@ with open(DATASET_IDS) as datasetfile:
 #read the dataset-ids file
 DEPLOYMENTS = {}
 with open(DEPLOYMENTS_IDS) as ddfile:
-    spreadsheet = csv.reader(ddile)
+    spreadsheet = csv.reader(ddfile)
     skipped_headers = False
     for row in spreadsheet:
         if False == skipped_headers:
@@ -90,7 +90,12 @@ with open(DEPLOYMENTS_IDS) as ddfile:
         elif row[0] not in DEPLOYMENTS:
                 DEPLOYMENTS[row[0]] = {'name': row[1]}
 
-NOT_FOUND = []]
+NOT_FOUND = {
+  'msg': [],
+  'dataset': [],
+  'dataset-deployment': [],
+  'deployment': [],
+}
 
 # read the dataset deployment file
 with open(CSV_INFO) as csvfile:
@@ -105,30 +110,40 @@ with open(CSV_INFO) as csvfile:
 
             deployment_name = None
             if data['dataset_id'] not in DATASETS:
-                
-                if data['dataset_id'] not in  NOT_FOUND['dataset']:
-                    NOT_FOUND.append('DATASET not found: ' + data['dataset_id'])
+                if data['dataset_id'] not in NOT_FOUND['dataset']:
+                    NOT_FOUND['dataset'].append(data['dataset_id'])
+                    NOT_FOUND['msg'].append('DATASET not found: ' + data['dataset_id'])
 
                 if data['dd_id'] not in DEPLOYMENTS:
-                    logging.warning('Dataset Deployment not found: ' + data['dd_id'])
-                    if data['dd_id'] not in  NOT_FOUND['dataset-deployment']:
-                        NOT_FOUND.append('DEPLOYMENT not found: ' + data['dd_id'])
+                    if data['dd_id'] not in NOT_FOUND['deployment']:
+                        NOT_FOUND['deployment'].append(data['dd_id'])
+                        NOT_FOUND['msg'].append('DEPLOYMENT not found: ' + data['dd_id'])
                     continue
                 else:
-                    deployment_name = DEPLOYMENTS[data['dd_id']['name']]
+                    deployment_name = DEPLOYMENTS[data['dd_id']]['name']
             else:
-                deployment_name = DATASETS[data['dataset_id']][data['dd_id']]['name']
+                if data['dd_id'] not in DATASETS[data['dataset_id']]:
+                    if data['dd_id'] not in NOT_FOUND['dataset-deployment']:
+                        NOT_FOUND['dataset-deployment'].append(data['dd_id'])
+                        NOT_FOUND['msg'].append('DATASET-DEPLOYMENT not found: ' + data['dd_id'] + ' in Dataset: ' + data['dataset_id'])
+                    
+                    if data['dd_id'] not in DEPLOYMENTS:
+                        if data['dd_id'] not in NOT_FOUND['deployment']:
+                            NOT_FOUND['deployment'].append(data['dd_id'])
+                            NOT_FOUND['msg'].append('DEPLOYMENT not found: ' + data['dd_id'])
+                        continue
+                    else:
+                        deployment_name = DEPLOYMENTS[data['dd_id']]['name']
 
-            if data['dd_id'] not in DATASETS[data['dataset_id']]:
-                logging.warning('Dataset Deployment not found: ' + data['dd_id'] + ' in Dataset: ' + data['dataset_id'])
-                if data['dd_id'] not in  NOT_FOUND['dataset-deployment']:
-                        NOT_FOUND.append('DATASET-DEPLOYMENT not found: ' + data['dd_id'])
-                continue
+                else:
+                    deployment_name = DATASETS[data['dataset_id']][data['dd_id']]['name']
+
 
             # get the filename
             filename = "{object}_{deployment}.csv".format(object=data['object_name'], deployment=deployment_name)
 
             # convert to CSV
+            logging.info("OBJECT: {o}".format(o=data['object_name']))
             filepath = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.tsv".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
             destination = "{dir}/{dataset}/{dest}".format(dir=OUTPUT_DIR, dataset=data['dataset_id'], dest=filename)
             makeCSV(source=filepath, destination=destination)
@@ -160,5 +175,7 @@ with open(CSV_INFO) as csvfile:
             """
 
 for d in NOT_FOUND:
-    logging.warning(d)
+    for item in NOT_FOUND[d]:
+        logging.warning(d + ': ' + item)
+
 logging.info('Done!')
