@@ -35,10 +35,10 @@ def readManifest(row):
         'dataset_id': row[0],
         'dd_id': row[1],
         'object_name': row[9],
-        'tsv_ok_dd': row[14],
+        'tsv_ok_dd': row[14],       # if False, print and continue
         'jgofs_ok_dd': row[15],
         'doc_ok_dd': row[16],
-        'comment_ok_dd': row[17],
+        'comment_ok_dd': row[17],   # if True, add this file as the file description
         'make_primary': row[27],
     }
 
@@ -97,13 +97,22 @@ NOT_FOUND = {
   'dataset': [],
   'dataset-deployment': [],
   'deployment': [],
+  'errors': [],
 }
 
 final_output_file = "{dir}/{file}".format(dir=OUTPUT_DIR, file=OUTPUT_FILE)
 with open(final_output_file, 'w', newline='') as writefile:
-    fieldnames = ['dataset_id', 'dd_id', 'object_name', 'tsv_ok_dd', 'jgofs_ok_dd', 'doc_ok_dd', 'comment_ok_dd', 'make_primary', 'output_file']
+    fieldnames = [
+        'dataset_id', 
+        'dd_id', 
+        'object_name', 
+        'make_primary', 
+        'output_file',
+        'description',
+    ]
     writer = csv.DictWriter(writefile, fieldnames=fieldnames)
-
+    writer.writeheader()
+    
     # read the dataset deployment file
     with open(CSV_INFO) as csvfile:
         spreadsheet = csv.reader(csvfile)
@@ -114,6 +123,11 @@ with open(final_output_file, 'w', newline='') as writefile:
                 skipped_headers = True
                 continue
             else:
+
+                # Is tsv file OK to use?
+                if data['tsv_ok_dd'] == 'False':
+                    logging.warning("**** BAD TSV for Dataset: {d}, Dataset-Deployment: {dd}, Object: {o}".format(d=data['dataset_id'], dd=data['dd_id'], o=data['object_name']))
+                    continue
 
                 deployment_name = None
                 if data['dataset_id'] not in DATASETS:
@@ -152,40 +166,39 @@ with open(final_output_file, 'w', newline='') as writefile:
                 # convert to CSV
                 logging.info("OBJECT: {o}".format(o=data['object_name']))
                 filepath = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.tsv".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
+                
                 destination = "{dir}/{dataset}/dataset_deployment/{dd_id}/{dest}".format(dir=OUTPUT_DIR, dataset=data['dataset_id'], dd_id=data['dd_id'], dest=filename)
                 makeCSV(source=filepath, destination=destination)
                 data['output_file'] = destination
+
+                # figure out the description
+                found_comment = False
+                if data['comment_ok_dd'] == 'True':
+                    commentfile_content = None
+                    commentfile = "{dir}{dataset_id}/dataset_deployment/{dd_id}/{object}.datacomment".format(dir=DATA_DIR, dataset_id=data['dataset_id'], dd_id=data['dd_id'], object=data['object_name'])
+                    if os.path.exists(commentfile):
+                        with open(commentfile, 'r') as comment_f:
+                            commentfile_content = comment_f.read()
+                        data['description'] = commentfile_content
+                        found_comment = True
+                    else:
+                        logging.warning("*** COMMENT FILE COULD NOT BE FOUND: {f}".format(f=commentfile))
+                
+                if False == found_comment:
+                    logging.warning("NO description for file: {f}".format(f=filepath))
+                    data['description'] = ''
+
+                unset(data['tsv_ok_dd'])
+                unset(data['jgofs_ok_dd'])
+                unset(data['doc_ok_dd'])
+                unset(data['comment_ok_dd'])
+
                 writer.writerow(data)
                 
-
-                """
-                # path: _jgofs/output/20230414143635/datasets/data/2291/dataURL/adcp.csv
-                json_path = data['path'].replace('_jgofs/output/20230414143635/datasets', '').replace('.csv', '.json')
-                if os.path.exists(json_path):
-                    with open(json_path) as f:
-                        # read information about the TSV that was extracted
-                        tsv_data = json.load(f)
-                        dataset_id = tsv_data['dataset_id']
-                        version = tsv_data['version']
-                        logging.info("Dataset: {id}_v{v}".format(id=dataset_id, v=version))
-                        drupalwriter.writerow([dataset_id, version, data['path'], data['filename'], data['bytesize'], data['md5'], data['mimetype'], data['aws_job_id'], data['aws_source_bucket'], data['aws_source_path'], data['url']])
-
-                        continue
-                        if 'downloads' in tsv_data and 'tsv' in tsv_data['downloads']:
-                            status_code = tsv_data['downloads']['tsv']['status_code']
-                            path = tsv_data['downloads']['tsv']['path']
-                            if 200 == status_code:
-                                logging.info("SUCCESS [{code}] {f}".format(code=status_code, f=os.path.basename(path)))
-                                lookupDatadocs(path=path, dataset_id=dataset_id, version_id=version)
-                            else:
-                                logging.info("FAILURE [{code}] {f}".format(code=status_code, f=os.path.basename(path)))
-                else:
-                    logging.warning("Could not find JSON: {f}".format(f=json_path));
-                    continue
-                """
-
+"""
 for d in NOT_FOUND:
     for item in NOT_FOUND[d]:
         logging.warning(d + ': ' + item)
+"""
 
 logging.info('Done!')
